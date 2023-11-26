@@ -20,9 +20,9 @@ class DNSMessage:
     
 # @dataclass
 # class DNSQuestion:
-    type_: int
-    class_: int
-    name: str
+    # type_: int
+    # class_: int
+    # name: str
 
 
 def pack_dns_message(message: DNSMessage) -> bytes:
