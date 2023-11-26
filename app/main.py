@@ -31,6 +31,8 @@ def pack_dns_message(message: DNSMessage) -> bytes:
     )
     return struct.pack(">HHHHHH", message.id, flags, message.qdcount, message.ancount, message.nscount, message.arcount)
 
+
+
 def main():
     print("Logs from your program will appear here!")
 
@@ -40,7 +42,6 @@ def main():
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
-
     
             response = pack_dns_message(DNSMessage(
                     id=1234,
@@ -52,20 +53,22 @@ def main():
                     ra=0,
                     z=0,
                     rcode=0,
-                    qdcount=int(1).to_bytes(2, byteorder='big'),
+                    qdcount=0,
                     ancount=0,
                     nscount=0,
                     arcount=0,
                 ))
             
-            Type = int(1).to_bytes(2, byteorder='big')
+            
+            num = 1
+            Type = num.to_bytes(2,byteorder="big")
 
             Class = int(1).to_bytes(2, byteorder='big')  
 
             Name = b'\x0ccodecrafters\x02io\x00'
 
             Question = Name + Type + Class
-
+    
             udp_socket.sendto(response + Question, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
