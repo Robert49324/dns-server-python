@@ -40,7 +40,7 @@ def main():
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
-            print(str(buf), str(source))
+
     
             response = pack_dns_message(DNSMessage(
                     id=1234,
@@ -65,8 +65,8 @@ def main():
             Name = b'\x0ccodecrafters\x02io\x00'
 
             Question = Name + Type + Class
-            print(Question, response)
-            udp_socket.sendto(response, Question, source)
+
+            udp_socket.sendto(response + Question, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
