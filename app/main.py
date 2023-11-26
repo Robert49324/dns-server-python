@@ -40,7 +40,7 @@ def pack_dns_message(message: DNSMessage) -> bytes:
 
 def pack_dns_question(message: DNSQuestion) -> bytes:
 
-    return struct.pack(">HHH", message.type_.to_bytes(2,byteorder="big"), message.class_.to_bytes(2,byteorder="big"), message.name.encode())
+    return struct.pack(">HHH", message.type_, message.class_, message.name.encode())
 
 
 
