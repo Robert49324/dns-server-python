@@ -79,6 +79,8 @@ def main():
             Question = pack_dns_question(DNSQuestion(1,1,Name))
 
             # Question = Name + Type + Class
+            
+            print(Question)
     
             udp_socket.sendto(response + Question, source)
         except Exception as e:
