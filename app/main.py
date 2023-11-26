@@ -22,7 +22,7 @@ class DNSMessage:
 class DNSQuestion:
     type_: int
     class_: int
-    name: int
+    name: str
 
 
 def pack_dns_message(message: DNSMessage) -> bytes:
@@ -40,7 +40,7 @@ def pack_dns_message(message: DNSMessage) -> bytes:
 
 def pack_dns_question(message: DNSQuestion) -> bytes:
 
-    return struct.pack(">HHH", message.type_.to_bytes(2,byteorder="big"), message.class_.to_bytes(2,byteorder="big"), message.name.to_bytes(2,byteorder="big"))
+    return struct.pack(">HHH", message.type_.to_bytes(2,byteorder="big"), message.class_.to_bytes(2,byteorder="big"), message.name.encode())
 
 
 
@@ -74,7 +74,7 @@ def main():
 
             # Class = int(1).to_bytes(2, byteorder='big')  
 
-            Name = b'\x0ccodecrafters\x02io\x00'
+            Name = '\x0ccodecrafters\x02io\x00'
             
             Question = pack_dns_question(DNSQuestion(1,1,Name))
 
