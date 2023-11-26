@@ -51,13 +51,21 @@ def main():
                     ra=0,
                     z=0,
                     rcode=0,
-                    qdcount=0,
+                    qdcount=int(1).to_bytes(2, byteorder='big'),
                     ancount=0,
                     nscount=0,
                     arcount=0,
                 ))
+            
+            Type = int(1).to_bytes(2, byteorder='big')
+
+            Class = int(1).to_bytes(2, byteorder='big')  
+
+            Name = b'\x0ccodecrafters\x02io\x00'
+
+            Question = Name + Type + Class
     
-            udp_socket.sendto(response, source)
+            udp_socket.sendto(response, Question, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
