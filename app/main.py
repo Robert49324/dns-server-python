@@ -18,8 +18,8 @@ class DNSMessage:
     nscount: int
     arcount: int
     
-@dataclass
-class DNSQuestion:
+# @dataclass
+# class DNSQuestion:
     type_: int
     class_: int
     name: str
@@ -38,9 +38,9 @@ def pack_dns_message(message: DNSMessage) -> bytes:
     )
     return struct.pack(">HHHHHH", message.id, flags, message.qdcount, message.ancount, message.nscount, message.arcount)
 
-def pack_dns_question(message: DNSQuestion) -> bytes:
-    name_bytes = message.name.encode('utf-8')
-    return struct.pack(f">HH{len(name_bytes)}s", message.type_, message.class_, name_bytes)
+# def pack_dns_question(message: DNSQuestion) -> bytes:
+#     name_bytes = message.name.encode('utf-8')
+#     return struct.pack(f">HH{len(name_bytes)}s", message.type_, message.class_, name_bytes)
 
 
 
@@ -72,15 +72,15 @@ def main():
                     arcount=0,
                 ))
             
-            # Type = int(1).to_bytes(2,byteorder="big")
+            Type = int(1).to_bytes(2,byteorder="big")
 
-            # Class = int(1).to_bytes(2, byteorder='big')  
+            Class = int(1).to_bytes(2, byteorder='big')  
 
             Name = '\x0ccodecrafters\x02io\x00'
             
-            Question = pack_dns_question(DNSQuestion(1,1,Name))
+            # Question = pack_dns_question(DNSQuestion(1,1,Name))
 
-            # Question = Name + Type + Class
+            Question = Name + Type + Class
     
             udp_socket.sendto(response + Question, source)
         except Exception as e:
