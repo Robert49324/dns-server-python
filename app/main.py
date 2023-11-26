@@ -18,6 +18,7 @@ class DNSMessage:
     nscount: int
     arcount: int
 
+
 def pack_dns_message(message: DNSMessage) -> bytes:
     flags = (
         (message.qr << 15)
@@ -53,7 +54,7 @@ def main():
                     ra=0,
                     z=0,
                     rcode=0,
-                    qdcount=0,
+                    qdcount=1,
                     ancount=0,
                     nscount=0,
                     arcount=0,
@@ -67,7 +68,7 @@ def main():
 
             Name = b'\x0ccodecrafters\x02io\x00'
 
-            Question = Name + Type + Class
+            Question = Name | Type | Class
     
             udp_socket.sendto(response + Question, source)
         except Exception as e:
