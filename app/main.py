@@ -39,9 +39,14 @@ def pack_dns_message(message: DNSMessage) -> bytes:
     return struct.pack(">HHHHHH", message.id, flags, message.qdcount, message.ancount, message.nscount, message.arcount)
 
 def pack_dns_question(message: DNSQuestion) -> bytes:
+    # Encode the domain name according to DNS naming conventions
     encoded_name = b"".join(struct.pack(f">B{len(segment)}s", len(segment), segment.encode()) for segment in message.name.split("."))
     
-    return struct.pack(f">HH", message.type_, message.class_) + encoded_name + struct.pack(">B", 0)
+    # Ensure the domain name is terminated with a zero byte
+    encoded_name += b'\x00'
+    
+    return struct.pack(f">HH", message.type_, message.class_) + encoded_name
+
 
 
 
