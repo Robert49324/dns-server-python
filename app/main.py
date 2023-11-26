@@ -39,13 +39,13 @@ def pack_dns_message(message: DNSMessage) -> bytes:
     return struct.pack(">HHHHHH", message.id, flags, message.qdcount, message.ancount, message.nscount, message.arcount)
 
 def pack_dns_question(message: DNSQuestion) -> bytes:
-    Type = int(1).to_bytes(2,byteorder="big")
+    Type = int(message.type_).to_bytes(2,byteorder="big")
 
-    Class = int(1).to_bytes(2, byteorder='big')  
+    Class = int(message.class_).to_bytes(2, byteorder='big')  
 
     Name = '\x0ccodecrafters\x02io\x00'
     
-    Question = Name + Type + Class
+    Question = message.name + Type + Class
 
     return Question
 
