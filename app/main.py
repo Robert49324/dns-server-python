@@ -64,7 +64,7 @@ def main():
             Name = b'\x0ccodecrafters\x02io\x00'
 
             Question = Name + Type + Class
-    
+            print(Question, response)
             udp_socket.sendto(response, Question, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
