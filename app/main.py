@@ -39,7 +39,12 @@ def pack_dns_message(message: DNSMessage) -> bytes:
     return struct.pack(">HHHHHH", message.id, flags, message.qdcount, message.ancount, message.nscount, message.arcount)
 
 def pack_dns_question(message: DNSQuestion) -> bytes:
-    return struct.pack(f">HH{len(message.name)}s", message.type_, message.class_, message.name.encode())
+    name_parts = message.name.split('.')
+    labels = [part.encode('utf-8') for part in name_parts]
+
+    encoded_name = b''.join(struct.pack(f">B{len(label)}s", len(label), label) for label in labels)
+    return struct.pack(f">{len(encoded_name)}sHH", encoded_name, message.type_, message.class_)
+
 
 
 
