@@ -40,7 +40,7 @@ def main():
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
-            print(buf, source)
+            print(str(buf), str(source))
     
             response = pack_dns_message(DNSMessage(
                     id=1234,
