@@ -81,11 +81,11 @@ def main():
         try:
             buf, source = udp_socket.recvfrom(512)
             response = DNSMessage(
-                1234, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+                1234, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0
             ).pack_dns_message()
             response += Question("codecrafters.io", 1, 1).build()
 
-            response += Answer("\x0ccodecrafters\x02io", 1, 1, 60, 4, "8.8.8.8").build()
+            response += Answer("codecrafters.io", 1, 1, 60, 4, "8.8.8.8").build()
             udp_socket.sendto(response, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
