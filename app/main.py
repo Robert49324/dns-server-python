@@ -78,17 +78,16 @@ def main():
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
     
-    
+    data, _ = udp_socket.recvfrom(1024)
+    id = struct.unpack('!H', data[:2])[0]
+    byte = struct.unpack('!B', data[2:3])[0] 
+    qr = byte >> 7 
+    op = (byte >> 3) & 0b1111 
+    rd = byte & 1
     
     while True:
         try:
-            data, _ = udp_socket.recvfrom(1024)
-            id = struct.unpack('!H', data[:2])[0]
-            byte = struct.unpack('!B', data[2:3])[0] 
-            qr = byte >> 7 
-            op = (byte >> 3) & 0b1111 
-            rd = byte & 1
-            
+            buf, source = udp_socket.recvfrom(512)
             response = DNSMessage(
                 id, 1, op, 0, 0, rd, 0 if op == 0 else 4 , 0, 0, 1, 1, 0, 0
             ).pack_dns_message()
