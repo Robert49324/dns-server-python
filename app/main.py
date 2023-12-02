@@ -95,9 +95,21 @@ def main():
             rd = byte & 1
             
             question = buf[12:]
-            domain_length = struct.unpack('!B', question[0:1])[0]
-            com_length = struct.unpack('!B', question[1:2])[0]
-            domain = question[1:1 + domain_length + com_length]
+            domain_parts = []
+            offset = 0
+
+            while True:
+                part_length = struct.unpack('!B', question[offset:offset + 1])[0]
+                offset += 1
+
+                if part_length == 0:
+                    break
+
+                domain_part = question[offset:offset + part_length].decode('utf-8')
+                domain_parts.append(domain_part)
+                offset += part_length
+
+            domain = '.'.join(domain_parts)
 
             # query_type = struct.unpack('!H', question[1 + domain_length:1 + domain_length + 2])[0]
             # query_class = struct.unpack('!H', question[1 + domain_length + 2:1 + domain_length + 4])[0]
