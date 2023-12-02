@@ -99,7 +99,7 @@ def main():
             domain = question[1:1 + domain_length]
 
             type = struct.unpack('!H', question[1 + domain_length:1 + domain_length + 2])[0]
-            class = struct.unpack('!H', question[1 + domain_length + 2:1 + domain_length + 4])[0]
+            qclass = struct.unpack('!H', question[1 + domain_length + 2:1 + domain_length + 4])[0]
 
 
             response = DNSMessage(
