@@ -116,7 +116,7 @@ def main():
 
             domain = '.'.join(domain_parts)
 
-            print("Domain:", domain.decode())
+            print("Domain:", domain)
 
             response = DNSMessage(
                 id, 1, op, 0, 0, rd, 0, 0, 0 if op == 0 else 4, 1, 1, 0, 0
