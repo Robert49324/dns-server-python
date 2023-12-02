@@ -19,58 +19,74 @@ class DNSMessage:
     arcount: int
 
 
-def pack_dns_message(message: DNSMessage) -> bytes:
-    flags = (
-        (message.qr << 15)
-        | (message.opcode << 11)
-        | (message.aa << 10)
-        | (message.tc << 9)
-        | (message.rd << 8)
-        | (message.ra << 7)
-        | (message.z << 4)
-        | message.rcode
-    )
-    return struct.pack(">HHHHHH", message.id, flags, message.qdcount, message.ancount, message.nscount, message.arcount)
+    def pack_dns_message(self) -> bytes:
+        flags = (
+            (self.qr << 15)
+            | (self.opcode << 11)
+            | (self.aa << 10)
+            | (self.tc << 9)
+            | (self.rd << 8)
+            | (self.ra << 7)
+            | (self.z << 4)
+            | self.rcode
+        )
+        return struct.pack(">HHHHHH", self.id, flags, self.qdcount, self.ancount, self.nscount, self.arcount)
 
+class Question:
+    def __init__(self, name, typ, cls):
+        self.Name = name
+        self.Type = typ
+        self.Class = cls
+    Name: str
+    Type: int
+    Class: int
+    def build(self) -> bytes:
+        names = self.Name.split(".")
+        bytes_array = b""
+        for name in names:
+            nl = len(name)
+            bytes_array += struct.pack(f"B{nl}s", nl, bytes(name, "utf-8"))
+        bytes_array += b"\x00" + struct.pack(">HH", self.Type, self.Class)
+        return bytes_array
 
+class Answer:
+    Name: str
+    Type: int
+    Class: int
+    TTL: int
+    Length: int
+    Data: str
+    def __init__(self, name, typ, cls, ttl, length, data):
+        self.Name = name
+        self.Type = typ
+        self.Class = cls
+        self.TTL = ttl
+        self.Length = length
+        self.Data = data
+    def build(self) -> bytes:
+        bytes_array = b""
+        names = self.Name.split(".")
+        for dn in names:
+            dnl = len(dn)
+            bytes_array += struct.pack(f"B{dnl}s", dnl, bytes(dn, "utf-8"))
+        bytes_array += b"\x00" + struct.pack(
+            ">HHIHBBBB", self.Type, self.Class, self.TTL, self.Length, 8, 8, 8, 8
+        )
+        return bytes_array
 
 def main():
-    print("Logs from your program will appear here!")
-
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
-    
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
-    
-            response = pack_dns_message(DNSMessage(
-                    id=1234,
-                    qr=1,
-                    opcode=0,
-                    aa=0,
-                    tc=0,
-                    rd=0,
-                    ra=0,
-                    z=0,
-                    rcode=0,
-                    qdcount=1,
-                    ancount=0,
-                    nscount=0,
-                    arcount=0,
-                ))
-            
-            
-            num = 1
-            Type = num.to_bytes(2,byteorder="big")
+            response = DNSMessage(
+                1234, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0
+            ).pack_dns_message()
+            response += Question("codecrafters.io", 1, 1).build()
 
-            Class = int(1).to_bytes(2, byteorder='big')  
-
-            Name = b'\x0ccodecrafters\x02io\x00'
-
-            Question = Name + Type + Class
-    
-            udp_socket.sendto(response + Question, source)
+            response += Answer("codecrafters.io", 1, 1, 60, 4, "8.8.8.8").build()
+            udp_socket.sendto(response, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
