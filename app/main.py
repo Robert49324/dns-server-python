@@ -87,6 +87,7 @@ def main():
     
     while True:
         try:
+            print(id)
             buf, source = udp_socket.recvfrom(512)
             response = DNSMessage(
                 1234, 1, op, 0, 0, rd, 0, 0, 0, 1, 1, 0, 0
