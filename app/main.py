@@ -90,7 +90,7 @@ def main():
             rd = byte & 1
             
             response = DNSMessage(
-                1234, 1, op, 0, 0, rd, 0, 0, 0, 1, 1, 0, 0
+                id, 1, op, 0, 0, rd, 0, 0, 0, 1, 1, 0, 0
             ).pack_dns_message()
             response += Question("codecrafters.io", 1, 1).build()
 
