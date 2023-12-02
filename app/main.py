@@ -121,9 +121,9 @@ def main():
             response = DNSMessage(
                 id, 1, op, 0, 0, rd, 0, 0, 0 if op == 0 else 4, 1, 1, 0, 0
             ).pack_dns_message()
-            response += Question("codecrafters.io", 1, 1).build()
+            response += Question(domain, 1, 1).build()
 
-            response += Answer("codecrafters.io", 1, 1,
+            response += Answer(domain, 1, 1,
                                60, 4, "8.8.8.8").build()
             udp_socket.sendto(response, source)
         except Exception as e:
