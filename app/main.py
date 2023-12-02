@@ -95,7 +95,6 @@ def main():
             rd = byte & 1
             
             question = buf[12:]
-            print(struct.unpack('!{/}s',question))
 
             response = DNSMessage(
                 id, 1, op, 0, 0, rd, 0, 0, 0 if op == 0 else 4, 1, 1, 0, 0
