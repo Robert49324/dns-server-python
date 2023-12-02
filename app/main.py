@@ -96,7 +96,8 @@ def main():
             
             question = buf[12:]
             domain_length = struct.unpack('!B', question[0:1])[0]
-            domain = question[1:1 + domain_length]
+            com_length = struct.unpack('!B', question[1:2])[0]
+            domain = question[1:1 + domain_length + com_length]
 
             query_type = struct.unpack('!H', question[1 + domain_length:1 + domain_length + 2])[0]
             query_class = struct.unpack('!H', question[1 + domain_length + 2:1 + domain_length + 4])[0]
