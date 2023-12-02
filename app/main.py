@@ -80,7 +80,7 @@ def main():
     
     while True:
         try:
-            print(id)
+
             buf, source = udp_socket.recvfrom(1024)
             
             id = struct.unpack('!H', buf[:2])[0]
@@ -88,6 +88,8 @@ def main():
             qr = byte >> 7 
             op = (byte >> 3) & 0b1111 
             rd = byte & 1
+            
+            print(id)
             
             response = DNSMessage(
                 id, 1, op, 0, 0, rd, 0, 0, 0, 1, 1, 0, 0
