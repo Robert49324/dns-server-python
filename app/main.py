@@ -94,6 +94,11 @@ def main():
             op = (byte >> 3) & 0b1111
             rd = byte & 1
             
+            # question = buf[12:]
+            # domain_length = struct.unpack('!B', question[0:1])[0]
+            # com_length = struct.unpack('!B', question[1:2])[0]
+            # domain = question[1:1 + domain_length + com_length]
+
             question = buf[12:]
             domain_parts = []
             offset = 0
@@ -110,9 +115,6 @@ def main():
                 offset += part_length
 
             domain = '.'.join(domain_parts)
-
-            # query_type = struct.unpack('!H', question[1 + domain_length:1 + domain_length + 2])[0]
-            # query_class = struct.unpack('!H', question[1 + domain_length + 2:1 + domain_length + 4])[0]
 
             print("Domain:", domain.decode())
 
