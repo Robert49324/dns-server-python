@@ -95,11 +95,12 @@ class Question:
     class_: int
     @staticmethod
     def from_bytes(src: bytes) -> Self:
-        def get_count(b: bytes) -> int:
-            v = struct.unpack(">B", b)
-            count = v[0]
-            print(f"got count {count}")
-            return count
+        pass
+    def get_count(b: bytes) -> int:
+        v = struct.unpack(">B", b)
+        count = v[0]
+        print(f"got count {count}")
+        return count
     @classmethod
     def from_bytes(cls, src: bytes, ptr: int) -> Tuple[Self, int]:
         # parse the labels
