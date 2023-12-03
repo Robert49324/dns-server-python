@@ -200,11 +200,11 @@ def main():
             query = DNSQuery.parse(data)
 
             response = DNSResponse.build_from(query)
+            print(response)
             udp_socket.sendto(response, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
-
 
 if __name__ == "__main__":
     main()
