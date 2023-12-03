@@ -80,8 +80,8 @@ class DNSQuestion:
     @classmethod
     def unpack(cls, data: bytes, payload: bytes):
         parts = []
-        while True:
-            length = data[0]
+        # while True:
+        #     length = data[0]
         while True:
             length = data[0]
             if length == 0:
