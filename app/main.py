@@ -1,3 +1,4 @@
+import argparse
 import socket
 import struct
 from dataclasses import dataclass
@@ -153,7 +154,7 @@ class DNSQuery:
 
 class DNSResponse:
     @staticmethod
-    def build_from(query: DNSQuery):
+    def build_from(query: DNSQuery, resolver):
         response = b""
 
         response += DNSHeader(
@@ -175,36 +176,54 @@ class DNSResponse:
         for question in query.questions:
             response += question.pack()
 
-        for question in query.questions:
-            response += DNSAnswer(
-                name=question.name,
-                type_=1,
-                class_=1,
-                ttl=60,
-                rdlength=4,
-                rdata="8.8.8.8",
-            ).pack()
+        if resolver is None:
+            for question in query.questions:
+                response += DNSAnswer(
+                    name=question.name,
+                    type_=1,
+                    class_=1,
+                    ttl=60,
+                    rdlength=4,
+                    rdata="8.8.8.8",
+                ).pack()
+        else:
+            ip, port = resolver.split(":")
+            port = int(port)
+            dns_resolver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+            query.header.qdcount = 1
+            for question in query.questions:
+                query_data = query.header.pack() + question.pack()
+                dns_resolver.sendto(query_data, (ip, port))
+
+                dns_resolver_response, _ = dns_resolver.recvfrom(512)
+                # We are skipping 4 bytes for the type and class fields
+                answer_offset = dns_resolver_response.index(b"\x00", 12) + 5
+                response += dns_resolver_response[answer_offset:]
+            dns_resolver.close()
 
         return response
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--resolver", help="IP address of the resolver")
+    args = parser.parse_args()
+
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
 
     while True:
         try:
-            data, source = udp_socket.recvfrom(1024)
-            print("data received", data)
-
+            data, source = udp_socket.recvfrom(512)
             query = DNSQuery.parse(data)
 
-            response = DNSResponse.build_from(query)
-            print(response)
+            response = DNSResponse.build_from(query, args.resolver)
             udp_socket.sendto(response, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
+
 
 if __name__ == "__main__":
     main()
