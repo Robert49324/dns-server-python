@@ -1,184 +1,264 @@
-from __future__ import annotations
 import socket
 import struct
-class DNSPacket:
-    def __init__(
-        self,
-        identifier,  # 16 bits
-        qr_opcode_aa_tc_rd,  # 8 bits
-        ra_z_rcode,  # 8 bits
-        # sections
-        qd,
-        an,
-        ns,
-        ar,
-    ):
-        self.identifier = identifier
-        self.qr = qr_opcode_aa_tc_rd >> 7
-        self.opcode = (qr_opcode_aa_tc_rd >> 3) & 0b1111
-        self.aa = (qr_opcode_aa_tc_rd >> 2) & 1
-        self.tc = (qr_opcode_aa_tc_rd >> 1) & 1
-        self.rd = qr_opcode_aa_tc_rd & 1
-        self.ra = ra_z_rcode >> 7
-        self.rcode = ra_z_rcode & 0b1111
-        self.qd = qd
-        self.an = an
-        self.ns = ns
-        self.ar = ar
+from dataclasses import InitVar, dataclass, field
+from typing import Self
+from typing import Self, Tuple
+@dataclass
+class HeaderFlags:
+    qr: int
+    opcode: int
+    aa: int
+    tc: int
+    rd: int
+    ra: int
+    z: int
+    rcode: int
+    @staticmethod
+    def from_int(src: int) -> "HeaderFlags":
+        return HeaderFlags(
+            src >> 15,
+            src >> 11,
+            src >> 10,
+            src >> 9,
+            src >> 8,
+            src >> 7,
+            src >> 4,
+            src >> 0,
+        )
+    def pack(self) -> int:
+        return (
+            self.qr << 15
+            | self.opcode << 11
+            | self.aa << 10
+            | self.tc << 9
+            | self.rd << 8
+            | self.ra << 7
+            | self.z << 4
+            | self.rcode
+        )
+@dataclass
+class DNSHeader:
+    id: int
+    flags_init: InitVar[int]
+    qdcount: int
+    ancount: int
+    nscount: int
+    arcount: int
+    flags: HeaderFlags = field(init=False)
+    def __post_init__(self, flags_init: int):
+        self.flags = HeaderFlags.from_int(flags_init)
+        if self.flags.opcode == 0:
+            self.flags.rcode = 0
+        else:
+            self.flags.rcode = 4
+    def pack_msg(self) -> bytes:
+        packed_flags = self.flags.pack()
+        return struct.pack(
+            ">HHHHHH",
+            self.id,
+            packed_flags,
+            self.qdcount,
+            self.ancount,
+            self.nscount,
+            self.arcount,
+        )
+    def pack_reply(self) -> bytes:
+        self.flags.qr = 1
+        return self.pack_msg()
+@dataclass
+class Labels:
+    labels: list[str]
+class Label:
+
+    label: list[str]
+    def encode(self) -> bytes:
+        res = b""
+    def encode(self) -> bytes:
+        res = b""
+        for label in self.labels:
+            for label in self.label:
+                # label is space, separated
+                for part in label.split():
+                    # get and encode len
+                    p_len = len(part)
+                    new = struct.pack(f">h{p_len}s", p_len, part)
+                    res = res.rstrip(b"\x00") + new.lstrip(b"\x00")
+
+        return res
+@dataclass
+class Question:
+    name: Labels
+
+    name: Label
+    type_: int
+    class_: int
+    class_: int
+    @staticmethod
+    def from_bytes(src: bytes) -> Self:
+        def get_count(b: bytes) -> int:
+            v = struct.unpack(">B", b)
+            count = v[0]
+            print(f"got count {count}")
+            return count
     @classmethod
-    def parse_from_bytes(cls, buf: bytes) -> DNSPacket:
-        (
-            ident,
-            qr_opcode_aa_tc_rd,
-            ra_z_rcode,
-            qd_count,
-            an_count,
-            ns_count,
-            ar_count,
-        ) = struct.unpack("!hBBhhhh", buf[:12])
-        qd = []
-        an = []
-        ns = []
-        ar = []
-        i = 12
-        print("qd count:", qd_count)
-        for _ in range(qd_count):
-            print("parsing qd section")
-            domain, i = parse_domain(buf, i)
-        for _ in range(qd_count):
-            print("parsing qd section")
-            domain, i = parse_domain(buf, i)
-
-            print("domain:", domain)
-            record_type, record_class = struct.unpack("!hh", buf[i : i + 4])
-            i += 4
-            qd.append((domain, record_type, record_class))
-        print("qd", qd)
-        for _ in range(an_count):
-            print("parsing an section")
-            domain, i = parse_domain(buf, i)
-            (record_type, record_class, ttl, datalen, rdata) = struct.unpack(
-                "!hhIhI", buf[i : i + 14]
-            )
-            i += 14
-            an.append((domain, record_type, record_class, ttl, rdata))
-        print("an", an)
-        return DNSPacket(ident, qr_opcode_aa_tc_rd, ra_z_rcode, qd, an, ns, ar)
-def parse_domain(buf: bytes, i: int = 0) -> tuple[str, int]:
-    parts = []
-    while True:
-        # compressed domain name
-        if buf[i] & 0b1100_0000:
-            offset = ((buf[i] & 0b0011_1111) << 8) + buf[i + 1]
-            domain, _ = parse_domain(buf, offset)
-            parts.append(domain)
-
-            return ".".join(parts), i + 2
-        name_len = buf[i]
-        i += 1
-        if name_len == 0:
-            break
-        name = buf[i : i + name_len].decode()
-        i += name_len
-        parts.append(name)
-    return ".".join(parts), i
-def question_section(domain_name: str, record_type: int, record_class: int) -> bytes:
-    buf = b""
-    for part in domain_name.split("."):
-        part = part.encode()
-        part_len = len(part)
-        buf += struct.pack(f"!B{part_len}s", part_len, part)
-    return buf + struct.pack("!xhh", record_type, record_class)
-def answer_section(
-    domain_name: str,
-    record_type: int,
-    record_class: int,
-    ttl: int,
-    rdlength: int,
-    rdata: bytes,
-) -> bytes:
-    qs = question_section(domain_name, record_type, record_class)
-    return qs + struct.pack("!Ih4s", ttl, rdlength, rdata)
+    def from_bytes(cls, src: bytes, ptr: int) -> Tuple[Self, int]:
+        # parse the labels
+        # we can split on null bytes
+        # we don't know how long this is so we need to pop byte by byte
+        # we can split on null bytes
+        # we don't know how long this is so we need to pop byte by byte
+        l = 0
+        r = 1
+        l = ptr
+        r = ptr + 1
+        def parse_type_class(ptr: int) -> Tuple[int, int]:
+            # here we hit a null and need to parse type/class
+            l = ptr + 1
+            r = l + 4
+            to_parse = src[l:r]
+            return struct.unpack(">HH", to_parse)
+        labels = []
+        type = None
+        class_ = None
+        type = 0
+        class_ = 0
+        while l < r and r < len(src):
+            v = struct.unpack(">b", src[l:r])
+            count = v[0]
+            if count == 0:
+                # here we hit a null and need to parse type/class
+                l = l + 1
+            count = Question.get_count(src[l:r])
+            # this is reserved to flag this as a pointer
+            if count == 192:
+                # skip to get val of pointer
+                l = r
+                r = l + 1
+                to_parse = src[l : r + 3]
+                print(f"trying to parse: {to_parse}")
+                type, class_ = struct.unpack(">HH", to_parse)
+                idx = Question.get_count(src[l:r])
+                # this is bit index, convert to byte
+                q, _ = Question.from_bytes(src, idx)
+                labels.extend(q.name.label)
+                type, class_ = parse_type_class(l)
+                break
+            if count == 0:
+                type, class_ = parse_type_class(l)
+                l = l + 4
+                break
+            l = l + 1
+            l += 1
+            r = l + count
+            word = struct.unpack(f">{count}s", src[l:r])
+            word = struct.unpack(f">{count}s", src[l:r])[0]
+            print(f"got word {word}")
+            labels.append(word[0])
+            labels.append(word)
+            l = r
+            r = l + 1
+            l = r
+            r = l + 1
+        return Question(class_=class_, type_=type, name=Labels(labels))
+        return (cls(class_=class_, type_=type, name=Label(labels)), l + 1)
+    def pack(self) -> bytes:
+        enc_name = self.name.encode()
+        len_enc = len(enc_name)
+        return struct.pack(f">{len_enc}sxHH", enc_name, self.type_, self.class_)
+@dataclass
+class Answer:
+    name: Labels
+    name: Label
+    type_: int
+    class_: int
+    ttl: int
+    rdlength: int
+    rdata: str
+    def fmt_rdata(self) -> bytes:
+        # rdata will be an ip address
+        # parse out the individual parts and encode them
+        res = b""
+        for n in self.rdata.split("."):
+            print(f"packing {n}")
+            new = struct.pack(">I", int(n))
+            res = res.rstrip(b"\x00") + new.lstrip(b"\x00")
+        return res
+    def pack(self) -> bytes:
+        enc_name = self.name.encode()
+        len_enc = len(enc_name)
+        rdata = self.fmt_rdata()
+        len_rdata = len(rdata)
+        return struct.pack(
+            f">{len_enc}sxHHIH{len_rdata}s",
+            enc_name,
+            self.type_,
+            self.class_,
+            self.ttl,
+            self.rdlength,
+            rdata,
+        )
+@dataclass
+class DNSMessage:
+    header: DNSHeader
+    question: Question
+    answer: Answer
+    question: list[Question]
+    answer: list[Answer]
+    @classmethod
+    def from_msg(cls, msg: bytes) -> Self:
+        # header len is always 12 bytes
+        header = DNSHeader(*struct.unpack(">HHHHHH", msg[:12]))
+        # from the header we can figure out how many questions we should have
+        questions = []
+        answers = []
+        ptr = 12
+        for _ in range(header.qdcount):
+            # first we need to parse the question
+            question, ptr = Question.from_bytes(msg, ptr)
+            # then we need to add an answer for each question
+            answer = Answer(question.name, 1, 1, 100, 4, "8.8.8.8")
+            questions.append(question)
+            answers.append(answer)
+            print("finished one question")
+        return cls(header, questions, answers)
+    def pack(self) -> bytes:
+        self.header.flags.qr = 1
+    def pack(self) -> bytes:
+        self.header.flags.qr = 1
+        if self.question is not None:
+            self.header.qdcount = 1
+            self.header.qdcount = len(self.question)
+        if self.answer is not None:
+            self.header.ancount = 1
+            self.header.ancount = len(self.answer)
+        return self.header.pack_msg() + self.question.pack() + self.answer.pack()
+        print(self)
+        questions = b""
+        for q in self.question:
+            questions += q.pack()
+        answers = b"".join(a.pack() for a in self.answer)
+        return self.header.pack_msg() + questions + answers
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!")
-    # Uncomment this block to pass the first stage
-    #
     udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_socket.bind(("127.0.0.1", 2053))
     while True:
         try:
             buf, source = udp_socket.recvfrom(512)
-            print(repr(buf))
-            packet = DNSPacket.parse_from_bytes(buf)
-            print(repr(packet))
-            ident = packet.identifier
-            qr_opcode_aa_tc_rd = 0b1000_0000
-            qr_opcode_aa_tc_rd |= packet.opcode << 3
-            qr_opcode_aa_tc_rd |= packet.rd
-            if packet.opcode == 0:
-                ra_z_rcode = 0b0000_0000
-            else:
-                # error (opcode not implemented)
-                ra_z_rcode = 0b0000_0100
-            qdcount = 1
-            ancount = 1
-            qdcount = 0
-            ancount = 0
-            nscount = 0
-
-            arcount = 0
-            nscount = 0
-
-            arcount = 0
-            sections = b""
-            for q in packet.qd:
-                domain_name, _, _ = q
-                question = question_section(
-                    domain_name=domain_name, record_type=1, record_class=1
-                )
-                sections += question
-                qdcount += 1
-            for q in packet.qd:
-                domain_name, _, _ = q
-                answer = answer_section(
-                    domain_name=domain_name,
-                    record_type=1,
-                    record_class=1,
-                    ttl=60,
-                    rdlength=4,
-                    rdata=b"\x08\x08\x08\x08",
-                )
-                sections += answer
-                ancount += 1
-            header = struct.pack(
-                "!hBBhhhh",
-                ident,  # 16 bits
-                qr_opcode_aa_tc_rd,  # 8 bits
-                ra_z_rcode,  # 8 bits
-                qdcount,  # 16 bits
-                ancount,  # 16 bits
-                nscount,  # 16 bits
-                arcount,  # 16 bits
-            )
-            domain_name, _, _ = packet.qd[0]
-            question = question_section(
-                domain_name=domain_name, record_type=1, record_class=1
-            )
-            print(repr(question))
-            answer = answer_section(
-                domain_name=domain_name,
-                record_type=1,
-                record_class=1,
-                ttl=60,
-                rdlength=4,
-                rdata=b"\x08\x08\x08\x08",
-            )
-            print(repr(answer))
-            response = header + question + answer
-            response = header + sections
-            print(repr(response))
+            header = DNSHeader(*struct.unpack(">HHHHHH", buf[:12]))
+            print(f"Received Message: {header}")
+            print(f"Received Message: {buf}")
+            res = DNSMessage.from_msg(buf).pack()
+            qbuffer = buf[12:]
+            print(f"buffer: {qbuffer}")
+            question = Question.from_bytes(qbuffer)
+            answer = Answer(question.name, 1, 1, 100, 4, "8.8.8.8")
+            response = DNSMessage(header, question, answer).pack()
+            print(f"Responding with {response}")
+            print(f"Responding with {res}")
             udp_socket.sendto(response, source)
+            udp_socket.sendto(res, source)
         except Exception as e:
             print(f"Error receiving data: {e}")
             break
