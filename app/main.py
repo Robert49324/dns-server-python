@@ -224,5 +224,6 @@ def main():
             print(f"Error receiving data: {e}")
             break
 
+
 if __name__ == "__main__":
     main()
