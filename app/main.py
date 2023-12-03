@@ -93,11 +93,6 @@ def main():
             qr = byte >> 7
             op = (byte >> 3) & 0b1111
             rd = byte & 1
-            
-            # question = buf[12:]
-            # domain_length = struct.unpack('!B', question[0:1])[0]
-            # com_length = struct.unpack('!B', question[1:2])[0]
-            # domain = question[1:1 + domain_length + com_length]
 
             question = buf[12:]
             domain_parts = []
@@ -116,7 +111,7 @@ def main():
 
             domain = '.'.join(domain_parts)
 
-            print("Domain:", domain)
+            print(buf, source)
 
             response = DNSMessage(
                 id, 1, op, 0, 0, rd, 0, 0, 0 if op == 0 else 4, 1, 1, 0, 0
